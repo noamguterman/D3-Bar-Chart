@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Bar Chart</title>
+  </head>
+  <body>
+    <div class="chart-container">
+      <h1 id="title">United States GDP</h1>
+
+      <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+
+      <p class="chart-info">
+        More Information:
+        <a href="http://www.bea.gov/national/pdf/nipaguid.pdf">GDP Data</a>
+      </p>
+
+      <!-- Tooltip -->
+      <div id="tooltip"></div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+      // Fetch the dataset from the provided URL
+      d3.json(
+        "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json"
+      ).then((data) => {
+        const dataset = data.data; // GDP data
+
+        const w = 1000;
+        const h = 500;
+        const padding = 60;
+
+        // Parse the date to a JavaScript Date object
+        const parseTime = d3.timeParse("%Y-%m-%d");
+
+        // Scales
+        const xScale = d3
+          .scaleTime()
+          .domain([
+            d3.min(dataset, (d) => parseTime(d[0])),
+            d3.max(dataset, (d) => parseTime(d[0])),
+          ])
+          .range([padding, w - padding]);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(dataset, (d) => d[1])])
+          .range([h - padding, padding]);
+
+        // SVG container
+        const svg = d3.select("svg").attr("viewBox", `0 0 ${w} ${h}`);
+
+        // Create bars
+        svg
+          .selectAll("rect")
+          .data(dataset)
+          .enter()
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", (d) => xScale(parseTime(d[0])))
+          .attr("y", (d) => yScale(d[1]))
+          .attr("width", (w - 2 * padding) / dataset.length)
+          .attr("height", (d) => h - padding - yScale(d[1]))
+          .attr("data-date", (d) => d[0])
+          .attr("data-gdp", (d) => d[1])
+          .on("mouseover", (event, d) => {
+            d3.select("#tooltip")
+              .style("visibility", "visible")
+              .html(`Date: ${d[0]}<br>GDP: $${d[1]} Billion`)
+              .attr("data-date", d[0])
+              .style("left", `${event.pageX + 10}px`)
+              .style("top", `${event.pageY - 30}px`);
+          })
+          .on("mouseout", () => {
+            d3.select("#tooltip").style("visibility", "hidden");
+          });
+
+        // Axes
+        const xAxis = d3.axisBottom(xScale).ticks(10); // Show 10 ticks for clarity
+
+        const yAxis = d3.axisLeft(yScale);
+
+        svg
+          .append("g")
+          .attr("transform", "translate(0," + (h - padding) + ")")
+          .attr("id", "x-axis")
+          .call(xAxis);
+
+        svg
+          .append("g")
+          .attr("transform", "translate(" + padding + ", 0)")
+          .attr("id", "y-axis")
+          .call(yAxis);
+      });
+    </script>
+  </body>
+</html>
